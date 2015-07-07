@@ -6,17 +6,28 @@ and testing -- i.e., matching pT distributions.
 '''
 
 class MultinomialSampler(object):
-    """
+    '''
     Fast (O(log n)) sampling from a discrete probability
     distribution, with O(n) set-up time.
-    """
+    '''
 
     def __init__(self, p, verbose=False):
+        '''
+        Initialize the sampler.
+
+        Args:
+            p (a list of np.array): list (length n) of numbers 
+                that represent the weights over an n-outcome distribution.
+            verbose (bool): self explanatory
+        '''
         n = len(p)
         p = p.astype(float) / sum(p)
         self._cdf = np.cumsum(p)
 
     def sample(self, k=1):
+        '''
+        Return k random index draws from the distribution.
+        '''
         rs = np.random.random(k)
         # binary search to get indices
         return np.searchsorted(self._cdf, rs)
@@ -25,10 +36,10 @@ class MultinomialSampler(object):
         return self.sample(**kwargs)
 
     def reconstruct_p(self):
-        """
+        '''
         Return the original probability vector.
         Helpful for debugging.
-        """
+        '''
         n = len(self._cdf)
         p = np.zeros(n)
         p[0] = self._cdf[0]
@@ -37,10 +48,10 @@ class MultinomialSampler(object):
 
 
 def multinomial_sample(p, k=1):
-    """
+    '''
     Wrapper to generate a k samples,
-    using the above class.
-    """
+    using the MultinomialSampler class.
+    '''
     return MultinomialSampler(p).sample(k)
 
 
