@@ -5,7 +5,7 @@ import numpy as np
 
 from keras.layers import containers
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, AutoEncoder, Max
+from keras.layers.core import Dense, Dropout, AutoEncoder, MaxoutDense
 from keras.layers.noise import GaussianNoise
 from keras.optimizers import SGD, RMSprop, Adagrad, Adam
 from keras import regularizers
@@ -16,13 +16,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-params = {
-            'structure' : [625, 512, 128, 64],
-            'activations' : 3 * [('sigmoid', 'relu')],
-            'noise' : [GaussianNoise(0.01), None, None],
-            'optimizer' : Adam(),
-            'loss' : ['mse', 'mse', 'mse']
-         }
+# params = {
+#             'structure' : [625, 512, 128, 64],
+#             'activations' : 3 * [('sigmoid', 'relu')],
+#             'noise' : [GaussianNoise(0.01), None, None],
+#             'optimizer' : Adam(),
+#             'loss' : ['mse', 'mse', 'mse']
+#          }
 
 def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
     '''
@@ -76,12 +76,16 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
             )
 
     if 'noise' not in params.keys():
+        logger.info('noise specifications not specified -- default to None')
         params['noise'] = len(params['activations']) * [None]
 
+
     if 'optimizer' not in params.keys():
+        logger.info('optimization specifications not specified -- using Adam()')
         params['optimizer'] = Adam()
 
     if 'loss' not in params.keys():
+        logger.info('loss specifications not specified -- using MSE')
         params['optimizer'] = len(params['activations']) * ['mse']
 
     structure = params['structure']
@@ -102,7 +106,7 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
         autoencoder.append(Sequential())
         if noise is not None:
             # -- noise should be a keras layer, so it can be in a Sequential() 
-
+            logger.info('using noise of type {}'.format(type(noise)))
             encoder = containers.Sequential(
                           [
                               noise, 
@@ -124,6 +128,7 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
             )
         logger.info('Compiling...')
         # -- each layer has it's own loss, but there is a global optimizer.
+        logger.info('Loss: {}, Optimizer: {}'.format(loss, type(params['optimizer'])))
         autoencoder[-1].compile(loss=loss, optimizer=params['optimizer'])
         logger.info('Training...')
 
@@ -196,6 +201,9 @@ def unroll_deep_ae(autoencoder, params, tie_weights=True):
                                         output_reconstruction=False, 
                                         tie_weights=tie_weights))
     return stacked_autoencoder
+
+
+
 
 
 
