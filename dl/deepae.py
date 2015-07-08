@@ -16,13 +16,13 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-structure = {
-                'structure' : [625, 512, 128, 64],
-                'activations' : 3 * [('sigmoid', 'relu')],
-                'noise' : [GaussianNoise(0.01), None, None],
-                'optimizer' : Adam(),
-                'loss' : ['mse', 'mse', 'mse']
-            }
+params = {
+            'structure' : [625, 512, 128, 64],
+            'activations' : 3 * [('sigmoid', 'relu')],
+            'noise' : [GaussianNoise(0.01), None, None],
+            'optimizer' : Adam(),
+            'loss' : ['mse', 'mse', 'mse']
+         }
 
 def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
     '''
@@ -33,7 +33,7 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
         params (dict): A dictionary with the following fields:
                 * `structure`: a list of ints that describe the
                         structure of the net, i.e., [10, 13, 2]
-                * `activation`: a list of tuples of strings of 
+                * `activations`: a list of tuples of strings of 
                         length len(structure - 1) that describe the 
                         encoding and decoding activation function.
                         For example, [('sigmoid', 'relu'), ('sigmoid', 'relu')]
@@ -46,19 +46,33 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
 
         tie_weights (bool): tied or untied autoencoders.
 
-        batch_size and nb_epoch should be self explanatory...
+        batch_size and nb_epoch: should be self explanatory...
+
+    Usage:
+
+        >>> params = {
+        ....'structure' : [625, 512, 128, 64],
+        ....'activations' : 3 * [('sigmoid', 'relu')],
+        ....'noise' : [GaussianNoise(0.01), None, None],
+        ....'optimizer' : Adam(),
+        ....'loss' : ['mse', 'mse', 'mse']
+        ....}
+        >>> ae, p = pretrain_deep_ae(params, X)
+
     Returns:
-        a tuple (keras_model, params)
+        a tuple (list, params), where list is a list of keras.Sequential().
     '''
+    # -- check for logic errors.
     if type(params) is not dict:
         raise TypeError('params must be of class `dict`.')
+    
     for k in ['structure', 'activations']:
         if k not in params.keys():
             raise KeyError('key: `{}` must be in params dict'.format(k))
 
     if len(params['structure']) != (len(params['activations']) + 1):
         raise ValueError(
-            'length of activations must be one less than length of structure.'
+                'length of activations must be one less than length of structure.'
             )
 
     if 'noise' not in params.keys():
@@ -72,10 +86,12 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
 
     structure = params['structure']
     autoencoder = []
+
+    # -- loop through the parameters
     for (inputs, hidden), (enc_act, dec_act), noise, loss in zip(
             zip(
-                structure, 
-                structure[1:]
+                structure,    # -- number of inputs
+                structure[1:] # -- number of outputs
                 ), 
             params['activations'], 
             params['noise'],
@@ -85,6 +101,8 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
         logger.info('Building {} x {} structure.'.format(inputs, hidden))
         autoencoder.append(Sequential())
         if noise is not None:
+            # -- noise should be a keras layer, so it can be in a Sequential() 
+
             encoder = containers.Sequential(
                           [
                               noise, 
@@ -92,7 +110,10 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
                           ]
                       )
         else:
+            # -- just a regular (non-denoising) ae.
             encoder = Dense(inputs, hidden, activation=enc_act)
+
+        # -- each element of the list is a Sequential(), so we add.   
         autoencoder[-1].add(
             AutoEncoder(
                     encoder=encoder,
@@ -102,23 +123,67 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
                 )
             )
         logger.info('Compiling...')
-        autoencoder[-1].compile(loss='mse', optimizer=params['optimizer'])
+        # -- each layer has it's own loss, but there is a global optimizer.
+        autoencoder[-1].compile(loss=loss, optimizer=params['optimizer'])
         logger.info('Training...')
+
+        # -- we allow people to end the training of each unit early.
         try:
             autoencoder[-1].fit(X, X, batch_size=batch_size, nb_epoch=nb_epoch)
         except KeyboardInterrupt:
             logger.info('Training ended early...')
-        X = autoencoder[-1].predict(X)
-    return autoencoder
 
-def unroll_deep_ae(structure, autoencoder, tie_weights=True):
+        # -- embed in the new code space.
+        X = autoencoder[-1].predict(X)
+
+    return autoencoder, params
+
+def unroll_deep_ae(autoencoder, params, tie_weights=True):
+    '''
+    Takes an autoencoder list generated by `pretrain_deep_ae` and
+    unrolls it to make a deep autoencoder. NOTE this doesn't
+    compile anything! This is simply a wrapper around the 
+    unrolling process to make it easier.
+
+    Args:
+        autoencoder (list): a list of keras layers.
+        params (dict): the param dict returned by `pretrain_deep_ae` 
+        tie_weights (bool): whether or not to make the weights tied.
+    
+    Usage:
+
+        >>> params = {
+        ....'structure' : [625, 512, 128, 64],
+        ....'activations' : 3 * [('sigmoid', 'relu')],
+        ....'noise' : [GaussianNoise(0.01), None, None],
+        ....'optimizer' : Adam(),
+        ....'loss' : ['mse', 'mse', 'mse']
+        ....}
+        >>> model = unroll_deep_ae(*pretrain_deep_ae(params, X))
+
+    Returns:
+        keras.Sequential: a keras sequential model with one layer
+            which is the unrolled autoencoder.
+    '''
     encoder = []
     decoder = []
-    for layer_nb, (inputs, hidden) in enumerate(zip(structure, structure[1:])):
+
+    structure = params['structure']
+
+    for (layer_nb, (inputs, hidden)), (enc_act, dec_act) in zip(
+            enumerate(
+                    zip(
+                        structure, 
+                        structure[1:]
+                    )
+                ), 
+            params['activations']
+        ):
+
         logger.info('Unpacking structure from level {}.'.format(layer_nb))
-        encoder.append(Dense(inputs, hidden, activation='sigmoid'))
+        encoder.append(Dense(inputs, hidden, activation=enc_act))
         encoder[-1].set_weights(autoencoder[layer_nb].get_weights()[:2])
-        decoder.insert(0, Dense(hidden, inputs, activation='relu'))
+        decoder.insert(0, Dense(hidden, inputs, activation=dec_act))
         decoder[0].set_weights(autoencoder[layer_nb].get_weights()[2:])
 
     encoder_sequence = containers.Sequential(encoder)
@@ -129,7 +194,7 @@ def unroll_deep_ae(structure, autoencoder, tie_weights=True):
     stacked_autoencoder.add(AutoEncoder(encoder=encoder_sequence, 
                                         decoder=decoder_sequence, 
                                         output_reconstruction=False, 
-                                        tie_weights=True))
+                                        tie_weights=tie_weights))
     return stacked_autoencoder
 
 
