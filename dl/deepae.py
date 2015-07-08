@@ -8,6 +8,8 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, AutoEncoder, Max
 from keras.layers.noise import GaussianNoise
 from keras.optimizers import SGD, RMSprop, Adagrad, Adam
+from keras import regularizers
+
 
 import logging
 
@@ -17,13 +19,15 @@ logger = logging.getLogger(__name__)
 structure = {
                 'structure' : [625, 512, 128, 64],
                 'activations' : 3 * [('sigmoid', 'relu')],
-                'noise' : [GaussianNoise(0.01), None, None]
+                'noise' : [GaussianNoise(0.01), None, None],
+                'optimizer' : Adam(),
+                'loss' : ['mse', 'mse', 'mse']
             }
 
 def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
     '''
-    A function for building and pretraining (interactively) a 
-    deep autoencoder.
+    A function for building and greedily pretraining (interactively) 
+    a deep autoencoder.
 
     Args:
         params (dict): A dictionary with the following fields:
@@ -35,6 +39,16 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
                         For example, [('sigmoid', 'relu'), ('sigmoid', 'relu')]
                 * `noise` (optional): a list of keras layers or None that describe 
                         the noise you want to add. i.e., [GaussianNoise(0.01), None]
+                * `optimizer` (optional): one of the keras optimizers
+                * `loss` (optional): a list of the loss functions to use.
+
+        X (numpy.ndarray): the data to perform the unsupervised pretraining on.
+
+        tie_weights (bool): tied or untied autoencoders.
+
+        batch_size and nb_epoch should be self explanatory...
+    Returns:
+        a tuple (keras_model, params)
     '''
     if type(params) is not dict:
         raise TypeError('params must be of class `dict`.')
@@ -50,15 +64,22 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
     if 'noise' not in params.keys():
         params['noise'] = len(params['activations']) * [None]
 
+    if 'optimizer' not in params.keys():
+        params['optimizer'] = Adam()
+
+    if 'loss' not in params.keys():
+        params['optimizer'] = len(params['activations']) * ['mse']
+
     structure = params['structure']
     autoencoder = []
-    for (inputs, hidden), (enc_act, dec_act), noise in zip(
+    for (inputs, hidden), (enc_act, dec_act), noise, loss in zip(
             zip(
                 structure, 
                 structure[1:]
                 ), 
             params['activations'], 
-            params['noise']
+            params['noise'],
+            params['loss']
         ):
     
         logger.info('Building {} x {} structure.'.format(inputs, hidden))
@@ -81,7 +102,7 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
                 )
             )
         logger.info('Compiling...')
-        autoencoder[-1].compile(loss='mse', optimizer=Adam())
+        autoencoder[-1].compile(loss='mse', optimizer=params['optimizer'])
         logger.info('Training...')
         try:
             autoencoder[-1].fit(X, X, batch_size=batch_size, nb_epoch=nb_epoch)
