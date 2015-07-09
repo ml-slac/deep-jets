@@ -13,7 +13,6 @@ Usage:
 >>> fg = ROC_plotter(discs)
 >>> fg.savefig('myroc.pdf')
 
-
 '''
 
 import numpy as np
@@ -60,8 +59,9 @@ def calculate_roc(labels, discriminant, weights=None, bins = 2000):
 	Args:
 		labels (numpy.array): an array of 1/0 representing signal/background
 		discriminant (numpy.array): an array that represents the discriminant
-		weights: sample weights for each point
-		bins: which bins to use
+		weights: sample weights for each point. 
+			`assert(weights.shape == discriminant.shape)
+		bins: binning to use -- can be an int or a list/array of bins.
 
 	Returns:
 		tuple: (signal_efficiency, background_rejection) where each are arrays

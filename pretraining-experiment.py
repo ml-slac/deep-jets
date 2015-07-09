@@ -12,7 +12,7 @@ from utils import WeightedDataset
 
 
 # -- swap with your own.
-data = np.load('data-wprime-qcd-5-21.npy')
+data = np.load('data-wprime-qcd.npy')
 
 # -- load and process daa
 X_ = np.array([x.ravel() for x in data['image']]).astype('float32')
