@@ -31,18 +31,23 @@ X_val, y_val = buf[0][n_train:], buf[1][n_train:]
 # -- build pretrained nets.
 
 params = {
-            'structure' : [625, 512, 128, 64],
-            'activations' : 3 * [('sigmoid', 'relu')],
-            'noise' : [GaussianNoise(0.01), None, None],
+            'structure' : [625, 512, 128, 64, 28],
+            'activations' : 2 * [('relu', 'sigmoid')] + 2 * [('relu', 'relu')],
+            'noise' : 4 * [Dropout(0.6)],
             'optimizer' : Adam(),
-            'loss' : ['mse', 'mse', 'mse']
+            'loss' : 2 * ['binary_crossentropy'] + 2 * ['mse']
          }
 
-ae, config = pretrain_deep_ae(params, X[:10000])
+ae, config = pretrain_deep_ae(params, X, nb_epoch=30, validation_data=(X_val, X_val))
 
 model = unroll_deep_ae(ae, config)
 
-model.compile(loss='mse', optimizer=Adam())
+model.compile(loss='binary_crossentropy', optimizer=Adam())
+
+
+weights = model.layers[0].encoder.layers[0].get_weights()
+
+
 
 model.fit(X, X, batch_size=512)
 

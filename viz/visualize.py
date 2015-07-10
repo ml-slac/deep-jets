@@ -4,6 +4,7 @@ author: Luke de Oliveira (lukedeo@stanford.edu)
 
 Utilities and functions to inspect neural net filters.
 '''
+import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import LinearSegmentedColormap 
 import numpy as np
@@ -52,7 +53,7 @@ def filter_grid(filters, nfilters='all', shape=None, normalize=True):
         plt.figure
     '''
     
-    NUMERICAL_NOISE_THRESH = 1e-4
+    NUMERICAL_NOISE_THRESH = 1e-3
 
     if nfilters == 'all':
         side_length = int(np.round(np.sqrt(len(filters))))
@@ -77,7 +78,8 @@ def filter_grid(filters, nfilters='all', shape=None, normalize=True):
             filt /= np.sum(filt ** 2)
 
         # -- trim off absurd values.
-        abs_max = np.percentile(np.abs(filt), 95)
+        # abs_max = np.percentile(np.abs(filt), 98)
+        abs_max = np.max(np.abs(filt))
 
         # -- trim out numerical zero noise
         filt[np.abs(filt) < NUMERICAL_NOISE_THRESH] = 0.0

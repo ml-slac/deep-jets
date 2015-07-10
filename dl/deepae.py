@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 #             'loss' : ['mse', 'mse', 'mse']
 #          }
 
-def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
+def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5, validation_data=None):
     '''
     A function for building and greedily pretraining (interactively) 
     a deep autoencoder.
@@ -134,7 +134,7 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5):
 
         # -- we allow people to end the training of each unit early.
         try:
-            autoencoder[-1].fit(X, X, batch_size=batch_size, nb_epoch=nb_epoch)
+            autoencoder[-1].fit(X, X, batch_size=batch_size, nb_epoch=nb_epoch, validation_data=validation_data)
         except KeyboardInterrupt:
             logger.info('Training ended early...')
 
