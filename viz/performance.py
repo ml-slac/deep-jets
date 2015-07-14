@@ -132,8 +132,8 @@ def add_curve(name, color, curve_pair, dictref):
 	dictref.update(
 		{
 			name : {
-						'efficiency' : tagger_pair[0], 
-						'rejection' : tagger_pair[1], 
+						'efficiency' : curve_pair[0], 
+						'rejection' : curve_pair[1], 
 						'color' : color
 					}
 		}

@@ -7,6 +7,7 @@ Utilities and functions to inspect neural net filters.
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import LinearSegmentedColormap 
+from matplotlib.colors import LogNorm
 import numpy as np
 
 import logging
@@ -33,7 +34,7 @@ def custom_div_cmap(numcolors=21, name='custom_div_cmap',
                 )
     return cmap
 
-def filter_grid(filters, nfilters='all', shape=None, normalize=True):
+def filter_grid(filters, labels=None, nfilters='all', shape=None, normalize=True, cmap=None, symmetric=True):
     '''
     A tool for visualizing filters on a grid.
 
@@ -60,7 +61,10 @@ def filter_grid(filters, nfilters='all', shape=None, normalize=True):
     else:
         side_length = int(np.round(np.sqrt(nfilters)))
 
-    cma = custom_div_cmap(50)
+    if cmap is None:
+        cma = custom_div_cmap(50)
+    else:
+        cma = cmap
     fig = plt.figure(figsize=(15, 15), dpi=140)
 
     if shape is None:
@@ -69,7 +73,8 @@ def filter_grid(filters, nfilters='all', shape=None, normalize=True):
     else:
         grid_layout = gridspec.GridSpec(shape[0], shape[1])
         nplots = shape[0] * shape[1]
-
+        # GmtoT1osfCpLCw6lzpnXh79y
+    plt.title('plots')
     grid_layout.update(wspace=0.0, hspace=0.0) # set the spacing between axes. 
 
     for i, filt in enumerate(filters):
@@ -83,12 +88,16 @@ def filter_grid(filters, nfilters='all', shape=None, normalize=True):
 
         # -- trim out numerical zero noise
         filt[np.abs(filt) < NUMERICAL_NOISE_THRESH] = 0.0
-
-        image = ax.imshow(filt, interpolation='nearest', 
-                cmap=cma, vmin=-abs_max, vmax=abs_max)
+        if symmetric:
+            image = ax.imshow(filt, interpolation='nearest', 
+                    cmap=cma, vmin=-abs_max, vmax=abs_max)
+        else:
+            image = plt.imshow(filt, interpolation='nearest', cmap=cma)
         if i % 10 == 0:
             logger.info('{} of {} completed.'.format(i, nplots))
         plt.axis('off')
+        if labels is not None:
+            plt.title(labels[i])
         plt.subplots_adjust(hspace = 0, wspace=0)
 
     return fig

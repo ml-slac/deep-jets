@@ -5,7 +5,7 @@ import numpy as np
 
 from keras.layers import containers
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, AutoEncoder, MaxoutDense
+from keras.layers.core import Dense, Dropout, AutoEncoder, MaxoutDense, ActivityRegularization
 from keras.layers.noise import GaussianNoise
 from keras.optimizers import SGD, RMSprop, Adagrad, Adam
 from keras import regularizers
@@ -110,12 +110,19 @@ def pretrain_deep_ae(params, X, tie_weights=True, batch_size=100, nb_epoch=5, va
             encoder = containers.Sequential(
                           [
                               noise, 
-                              Dense(inputs, hidden, activation=enc_act)
+                              Dense(inputs, hidden, activation=enc_act), 
+                              ActivityRegularization(l1=0.001)
                           ]
                       )
         else:
             # -- just a regular (non-denoising) ae.
-            encoder = Dense(inputs, hidden, activation=enc_act)
+            encoder = containers.Sequential(
+                          [
+                              Dense(inputs, hidden, activation=enc_act), 
+                              ActivityRegularization(l1=0.001)
+                          ]
+                      )
+            # encoder = Dense(inputs, hidden, activation=enc_act)
 
         # -- each element of the list is a Sequential(), so we add.   
         autoencoder[-1].add(

@@ -56,8 +56,11 @@ def multinomial_sample(p, k=1):
 
 
 class WeightedDataset(object):
-    """docstring for WeightedDataset"""
+    '''
+    
+    '''
     def __init__(self, X, y=None, weights=None, copy = True):
+        self._ix_buf = None
         if copy:
             self._X = X.copy()
             if not y is None:
@@ -88,14 +91,15 @@ class WeightedDataset(object):
         self._weights = self._weights / np.sum(self._weights)
 
     def sample_idx(self, n):
-        return multinomial_sample(self._weights, n)
+        self._ix_buf = multinomial_sample(self._weights, n)
+        return self._ix_buf
 
     def sample(self, n):
-        ix = multinomial_sample(self._weights, n)
+        self._ix_buf = multinomial_sample(self._weights, n)
         if self._y is None:
-            return self._X[ix]
+            return self._X[self._ix_buf]
         else:
-            return self._X[ix], self._y[ix]
+            return self._X[self._ix_buf], self._y[self._ix_buf]
 
 
 
