@@ -42,9 +42,10 @@ def get_weights(target, actual, bins = 10, cap = 10, match = True):
 	counts, _ = np.histogram(actual, bins=target_bins)
 	counts = (1.0 * counts)
 	counts = np.array([max(a, 0.0001) for a in counts])
-	multiplier = target_counts / counts
+	multiplier = np.array((target_counts / counts).tolist() + [1.0])
 
 	weights = np.array([min(multiplier[target_bins.searchsorted(point) - 1], cap) for point in actual])
+	# weights = np.array([target_bins.searchsorted(point) for point in actual])
 
 	if match:
 		weights *= (len(target) / np.sum(weights))
@@ -96,7 +97,7 @@ def calculate_roc(labels, discriminant, weights=None, bins = 2000):
 
 def ROC_plotter(curves, min_eff = 0, max_eff = 1, linewidth = 1.4, 
 	pp = False, signal = "$Z\rightarrow t\bar{t}$", background = "QCD", 
-	title = "Jet Image Tagging Comparison", logscale = True):	
+	title = "Jet Image Tagging Comparison", logscale = True, ymax=10**4):	
 
 	fig = plt.figure(figsize=(11.69, 8.27), dpi=100)
 	ax = fig.add_subplot(111)
@@ -114,7 +115,7 @@ def ROC_plotter(curves, min_eff = 0, max_eff = 1, linewidth = 1.4,
 	for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
 		item.set_fontsize(20) 
 	if logscale == True:	
-		plt.ylim(1,10 ** 3)
+		plt.ylim(1,ymax)
 		ax.set_yscale('log')
 	ax.set_xlabel(r'$\epsilon_{\mathrm{signal}}$')
 	ax.set_ylabel(r"$1 / \epsilon_{\mathrm{bkg}}$")
