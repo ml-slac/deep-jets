@@ -97,7 +97,7 @@ def calculate_roc(labels, discriminant, weights=None, bins = 2000):
 
 def ROC_plotter(curves, min_eff = 0, max_eff = 1, linewidth = 1.4, 
 	pp = False, signal = "$Z\rightarrow t\bar{t}$", background = "QCD", 
-	title = "Jet Image Tagging Comparison", logscale = True, ymax=10**4):	
+	title = "Jet Image Tagging Comparison", logscale = True, ymax=10**4, ymin=1):	
 
 	fig = plt.figure(figsize=(11.69, 8.27), dpi=100)
 	ax = fig.add_subplot(111)
@@ -115,7 +115,7 @@ def ROC_plotter(curves, min_eff = 0, max_eff = 1, linewidth = 1.4,
 	for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
 		item.set_fontsize(20) 
 	if logscale == True:	
-		plt.ylim(1,ymax)
+		plt.ylim(ymin,ymax)
 		ax.set_yscale('log')
 	ax.set_xlabel(r'$\epsilon_{\mathrm{signal}}$')
 	ax.set_ylabel(r"$1 / \epsilon_{\mathrm{bkg}}$")

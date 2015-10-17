@@ -20,7 +20,7 @@ PLOT_DIR = './plots/8-27/%s'
 
 
 # dat = np.load('../deep-jets/data/processed/wprime-800-qcd-8-17.npy')
-dat = np.load('../jet-simulations/slac-data.npy')
+dat = np.load('../jet-simulations/final-samples-all.npy')
 print '{} jets before preselection'.format(dat.shape[0])
 
 
@@ -75,9 +75,9 @@ plt.hist(pt[signal == True], bins=np.linspace(200, 400, 100),
 plt.hist(pt[signal == False], bins=np.linspace(200, 400, 100), 
 	histtype='step', color='blue', label='QCD', linewidth=2)
 plt.xlabel(r'$p_T$ [GeV]')
-plt.ylabel('Count')
+plt.ylabel('Weighted Count')
 plt.ylim(0, 60000)
-plt.title(r'Jet $p_T$ distribution, $p_T^W \in [200, 400]$ GeV' + '\n' + 
+plt.title(r'Jet $p_T$ distribution, $p_T \in [200, 400]$ GeV' + '\n' + 
 	r'$m_{W}\in [65, 95]$ GeV')
 plt.legend()
 plt.savefig(PLOT_DIR % 'unweighted-pt-distribution.pdf')
