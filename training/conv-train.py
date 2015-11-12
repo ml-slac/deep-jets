@@ -46,7 +46,7 @@ class ROCModelCheckpoint(Callback):
 
 
 print 'Constructing net'
-FILTER_SIZES = [(6, 6), (3, 3), (3, 3), (3, 3)]
+FILTER_SIZES = [(11, 11), (3, 3), (3, 3), (3, 3)]
 
 dl = Sequential()
 dl.add(Convolution2D(32, *FILTER_SIZES[0], input_shape=(1, 25, 25), border_mode='full', W_regularizer=regularizers.l2(0.01)))
